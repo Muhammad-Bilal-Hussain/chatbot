@@ -65,7 +65,7 @@ export default function ChatBot() {
         .replace(/(\*\*[^*]+\*\*)/g, "<b>$1</b>"); // Bold handling
 
       setChatHistory([...newChat, { role: "ai", text: cleanResponse }]);
-    } catch (error) {
+    } catch {
       setChatHistory([...newChat, { role: "ai", text: "❌ Failed to fetch response" }]);
     }
     setLoading(false);

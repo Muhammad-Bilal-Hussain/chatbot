@@ -2,14 +2,14 @@ import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // ✅ GET Request ke liye API Route
-export async function GET(req: Request) {
+export async function GET() {
   return NextResponse.json({ message: "Use POST method to chat with AI" });
 }
 
 // ✅ POST Request ke liye API Route
-export async function POST(req: Request) {
+export async function POST(_req: Request) {
   try {
-    const { message } = await req.json();
+    const { message } = await _req.json();
 
     if (!message) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
