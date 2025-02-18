@@ -111,8 +111,8 @@ export default function ChatBot() {
                   key={index}
                   className={`p-2 my-1 rounded-lg max-w-[80%] text-sm sm:text-base ${
                     msg.role === "user"
-                      ? "bg-white text-red-700 self-end ml-auto text-left"
-                      : "bg-white text-red-700 text-left"
+                      ? "bg-white text-black self-end ml-auto text-left"
+                      : "bg-white text-black text-left"
                   }`}
                 >
                   <div dangerouslySetInnerHTML={{ __html: msg.text }} /> {/* Render HTML */}
@@ -120,7 +120,7 @@ export default function ChatBot() {
                   {msg.role === "ai" && (
                     <button
                       onClick={() => copyToClipboard(msg.text)}
-                      className=" text-right text-xs text-black"
+                      className=" text-right text-xs text-red-700"
                     >
                       Copy
                     </button>
