@@ -14,7 +14,8 @@
 /out/
 
 #route.ts
-/api
+/api/chat/route.ts
+
 # production
 /build
 
