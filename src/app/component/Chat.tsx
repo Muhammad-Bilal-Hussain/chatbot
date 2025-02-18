@@ -95,24 +95,24 @@ export default function ChatBot() {
   };
 
   return (
-    <div className="max-w-full h-screen bg-gray-100">
+    <div className="max-w-full h-screen bg-black">
       <div className="max-w-7xl mx-auto px-10">
         <div className="flex flex-col items-center justify-center p-4">
-          <div className="bg-white shadow-lg rounded-xl p-4 w-full max-w-lg md:max-w-xl lg:max-w-2xl">
-            <h1 className="text-xl font-bold text-center mb-4">💬 AI Chatbot</h1>
+          <div className="border border-red-500 bg-black rounded-xl p-4 w-full max-w-lg md:max-w-xl lg:max-w-2xl">
+            <h1 className="text-xl font-bold text-center mb-4 text-red-700">💬 AI Chatbot</h1>
 
             {/* Chat Window */}
             <div
               ref={chatContainerRef}
-              className="h-[40vh] overflow-y-auto p-3 border rounded-lg bg-gray-50 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
+              className="border border-red-600 h-[40vh] overflow-y-auto p-3 rounded-lg bg-black text-red-700 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
             >
               {chatHistory.map((msg, index) => (
                 <div
                   key={index}
                   className={`p-2 my-1 rounded-lg max-w-[80%] text-sm sm:text-base ${
                     msg.role === "user"
-                      ? "bg-blue-500 text-white self-end ml-auto text-left"
-                      : "bg-gray-300 text-black text-left"
+                      ? "bg-white text-red-700 self-end ml-auto text-left"
+                      : "bg-white text-red-700 text-left"
                   }`}
                 >
                   <div dangerouslySetInnerHTML={{ __html: msg.text }} /> {/* Render HTML */}
@@ -120,7 +120,7 @@ export default function ChatBot() {
                   {msg.role === "ai" && (
                     <button
                       onClick={() => copyToClipboard(msg.text)}
-                      className=" text-right text-xs text-blue-500"
+                      className=" text-right text-xs text-black"
                     >
                       Copy
                     </button>
@@ -131,7 +131,7 @@ export default function ChatBot() {
 
             {/* Input Area */}
             <textarea
-              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 mt-3 text-sm sm:text-base"
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 mt-3 text-sm sm:text-base"
               rows={3}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -143,7 +143,7 @@ export default function ChatBot() {
             <button
               onClick={sendMessage}
               disabled={loading}
-              className="w-full mt-3 p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 text-sm sm:text-base"
+              className="w-full mt-3 p-2 bg-black text-red-700 rounded-lg border border-red-600 hover:shadow-red-500 shadow-lg disabled:opacity-50 text-sm sm:text-base"
             >
               {loading ? "Thinking..." : "Send"}
             </button>
@@ -153,7 +153,7 @@ export default function ChatBot() {
 
       {/* "Copied" Message */}
       {copied && (
-        <div className="fixed bottom-10 right-10 p-3 bg-green-500 text-white rounded-lg opacity-90 transition-opacity duration-1000">
+        <div className="border border-red-600 fixed bottom-10 right-10 p-3 bg-black text-red-700 rounded-lg opacity-90 transition-opacity duration-1000">
           Copied!
         </div>
       )}
