@@ -16,6 +16,13 @@ export default function ChatBot() {
     setChatHistory(newChat);
     setMessage("");
 
+      // Check for the 'who is your founder' query
+  if (message.toLowerCase().includes("who is your founder")) {
+    setChatHistory([...newChat, { role: "ai", text: "My founder is Muhammad Bilal Hussain." }]);
+    setLoading(false);
+    return; // Exit early to avoid calling the API
+  }
+
     try {
         const res = await fetch("/api/chat", {
             method: "POST",
