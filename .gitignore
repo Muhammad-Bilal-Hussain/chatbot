@@ -14,7 +14,7 @@
 /out/
 
 #route.ts
-api
+/api
 # production
 /build
 
