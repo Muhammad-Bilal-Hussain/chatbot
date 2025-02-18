@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Message is required" }, { status: 400 });
     }
 
-    const apiKey = "AIzaSyASsId60KDqb4DcrhJs-Ia65C-fWONCboA";
+    const apiKey = process.env.NEXT_PUBLIC_API_KEY;
     if (!apiKey) {
       console.error("❌ API Key not found!");
       return NextResponse.json({ error: "API key not found" }, { status: 500 });
