@@ -1,117 +1,201 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
-type SpeechRecognitionEventType = {
-  results: SpeechRecognitionResultList;
+// ✅ Define Speech Recognition Interface
+type SpeechRecognitionType = {
+  start: () => void;
+  stop: () => void;
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: SpeechRecognitionError) => void) | null;
 };
 
-const Voice = () => {
-  const [text, setText] = useState(""); // Recognized text
-  const [reply, setReply] = useState(""); // AI ka response
-  const [isListening, setIsListening] = useState(false);
-  const [speech, setSpeech] = useState<SpeechSynthesisUtterance | null>(null);
+// ✅ Global Window Interface Update
+declare global {
+  interface Window {
+    SpeechRecognition?: new () => SpeechRecognitionType;
+    webkitSpeechRecognition?: new () => SpeechRecognitionType;
+  }
 
-  // ✅ Speech Recognition Setup
-  const recognition = new ((window as any).SpeechRecognition || (window as any).webkitSpeechRecognition)();
-  recognition.continuous = true; // 🟢 Continuous listening enable
-  recognition.interimResults = false;
-  recognition.lang = "en-US";
+  interface SpeechRecognitionEvent extends Event {
+    results: SpeechRecognitionResultList;
+  }
+
+  interface SpeechRecognitionError extends Event {
+    error: string;
+  }
+}
+
+export default function VoiceChatBot() {
+  const [message, setMessage] = useState(""); // Current input message
+  const [chatHistory, setChatHistory] = useState<{ role: string; text: string }[]>([]);
+  const [isListening, setIsListening] = useState(false); // Mic status
+  const [loading, setLoading] = useState(false); // AI response loading status
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionType | null>(null);
+  const spokenTextRef = useRef<string>(""); // Variable to hold spoken text
+
+  // ✅ Initialize Speech Recognition
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognitionAPI) {
+        recognitionRef.current = new SpeechRecognitionAPI();
+        recognitionRef.current.continuous = false; // Single speech
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = "en-US";
+
+        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+          spokenTextRef.current = event.results[0][0].transcript.trim(); // Extract speech text
+          setMessage(spokenTextRef.current); // Save spoken text in state
+          recognitionRef.current?.stop();
+        };
+
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+          if (spokenTextRef.current.trim()) {
+            sendMessage(spokenTextRef.current); // Send message automatically after speech input
+          }
+        };
+
+        recognitionRef.current.onerror = (event: SpeechRecognitionError) => {
+          console.error("Speech recognition error:", event.error);
+          setIsListening(false);
+        };
+      }
+    }
+
+    return () => {
+      recognitionRef.current?.stop();
+    };
+  }, []);
 
   // ✅ Start Listening Function
   const startListening = () => {
-    setIsListening(true);
-    setText(""); // Reset text before new recognition
-    recognition.start();
+    if (recognitionRef.current) {
+      setIsListening(true);
+      recognitionRef.current.start();
+    }
   };
 
-  let spokenText = ""; // Define spokenText in the outer scope
+  // ✅ Function to Send Message (Either Voice or Text)
+  const sendMessage = async (inputMessage?: string) => {
+    const finalMessage = inputMessage || message.trim();
+    if (!finalMessage) return;
 
-  // ✅ Speech Recognition Event Handling
-  recognition.onresult = async (event: SpeechRecognitionEventType) => {
-    spokenText = "";
-    for (let i = 0; i < event.results.length; i++) {
-      spokenText += event.results[i][0].transcript.trim() + " ";
-    }
-    setText(spokenText.trim()); // Save full speech text
+    setLoading(true);
 
-    // ✅ Jab user bolna band kare to recognition stop ho
-    setTimeout(() => {
-      recognition.stop();
-    }, 2000); // 2 sec tak silence detect karega
-  };
+    // Add user message to chat
+    const newChat = [...chatHistory, { role: "user", text: finalMessage }];
+    setChatHistory(newChat);
+    setMessage("");
 
-  // ✅ Speech Recognition Stopped / End Handling
-  recognition.onend = async () => {
-    setIsListening(false); // Listening ko reset karo
-
-    if (!text.trim()) {
-      setReply("I didn't hear anything.");
-      return;
-    }
-
-    // ✅ AI Response lene ke liye API request bhejna
     try {
-      const response = await fetch("/api/chat", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          systemMessage: "You are a helpful AI assistant. Answer clearly and correctly.",
-          chatHistory: [
-            { role: "user", text: spokenText }
-          ]
+          chatHistory: [...chatHistory, { role: "user", text: finalMessage }],
         }),
       });
 
-      const data = await response.json();
-      if (data.reply) {
-        setReply(data.reply);
-        speakText(data.reply); // 🗣️ AI ka jawab bolwana
-      } else {
-        setReply("No response from AI.");
-      }
-    } catch (error) {
-      console.error("Error fetching AI response:", error);
-      setReply("Error getting response.");
+      const data = await res.json();
+
+      // Clean response & update chat
+      const cleanResponse = data.reply.replace(/<\/?[^>]+(>|$)/g, "").trim();
+      setChatHistory([...newChat, { role: "ai", text: cleanResponse }]);
+      speakText(cleanResponse); // 🗣️ Speak the AI response
+    } catch {
+      setChatHistory([...newChat, { role: "ai", text: "❌ Failed to fetch response" }]);
     }
+    setLoading(false);
   };
 
-  recognition.onerror = (event: any) => {
-    console.error("Speech recognition error:", event.error);
-    setIsListening(false);
-  };
-
-  // ✅ Text to Speech Function
-  const speakText = (message: string) => {
-    if (speech) {
-      window.speechSynthesis.cancel();
-    }
-
-    const utterance = new SpeechSynthesisUtterance(message);
+  // ✅ Function to Speak AI Response
+  const speakText = (text: string) => {
+    const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "en-US";
-    setSpeech(utterance);
-
     window.speechSynthesis.speak(utterance);
   };
 
+  // ✅ Scroll to latest message
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatHistory]);
+
+  // ✅ Handle Enter key for sending text
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
   return (
-    <div className="w-full h-screen bg-black flex flex-col items-center p-4">
-      <h2 className="text-lg font-bold mb-4 text-white">Voice Assistant</h2>
+    <div className="max-w-full h-screen bg-black">
+      <div className="max-w-7xl mx-auto px-10">
+        <div className="flex flex-col items-center justify-center p-4">
+          <div className="border border-red-500 bg-black rounded-xl p-4 w-full max-w-lg md:max-w-xl lg:max-w-2xl">
+            <h1 className="text-xl font-bold text-center mb-4 text-red-700">🎙️ AI Type & Voice Chatbot</h1>
 
-      {/* Start Listening Button */}
-      <button
-        onClick={startListening}
-        className={`px-4 py-2 rounded-md ${
-          isListening ? "bg-red-700 text-white" : "bg-white border border-red-700 text-red-700"
-        }`}
-      >
-        {isListening ? "Listening..." : "Start Speaking"}
-      </button>
+            {/* Chat Window */}
+            <div
+              ref={chatContainerRef}
+              className="border border-red-600 h-[40vh] overflow-y-auto p-3 rounded-lg bg-black text-red-700 scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-gray-200"
+            >
+              {chatHistory.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`p-2 my-1 rounded-lg max-w-[80%] text-sm sm:text-base ${
+                    msg.role === "user"
+                      ? "bg-white text-black self-end ml-auto text-left"
+                      : "bg-white text-black text-left"
+                  }`}
+                >
+                  <div>{msg.text}</div>
+                </div>
+              ))}
+            </div>
 
-      {/* Display Recognized Text */}
-      {text && <p className="mt-4 text-lg font-semibold text-white">You said: {text}</p>}
-      {reply && <p className="mt-4 text-lg font-semibold text-white">AI says: {reply}</p>}
+            {/* Voice & Text Input Section */}
+            <div className="flex gap-2 mt-3">
+              {/* 🎤 Mic Button */}
+              <button
+                onClick={startListening}
+                className={`p-2 w-16 rounded-lg ${
+                  isListening ? "bg-red-700 text-white" : "bg-white border border-red-700 text-red-700"
+                }`}
+              >
+                {isListening ? "🎤" : "🎙️"}
+              </button>
+
+              {/* 📝 Text Input */}
+              <textarea
+                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 text-sm sm:text-base"
+                rows={2}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message..."
+              ></textarea>
+
+              {/* Send Button */}
+              <button
+                onClick={() => sendMessage()}
+                disabled={loading}
+                className="w-16 p-2 bg-black text-red-700 rounded-lg border border-red-600 hover:shadow-red-500 shadow-lg disabled:opacity-50 text-sm sm:text-base"
+              >
+                {loading ? "🤔" : "📨"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
-};
-
-export default Voice;
+}

@@ -35,7 +35,7 @@ const Navbar = () => {
                 : "hover:bg-red-500 hover:text-black"
             }`}
           >
-            TextChat
+            Chat
           </button>
           <button
             onClick={() => handleNavigation("/Voice", "Voice")}
@@ -45,7 +45,7 @@ const Navbar = () => {
                 : "hover:bg-red-500 hover:text-black"
             }`}
           >
-            VoiceChat
+            Voice & Chat
           </button>
         </div>
       </div>
