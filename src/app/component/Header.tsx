@@ -14,7 +14,7 @@ const Navbar = () => {
 
   return (
     <nav className="bg-black p-4 shadow-md py-10">
-      <div className="container mx-auto flex justify-center items-center">
+      <div className="container mx-auto flex justify-center items-center max-sm:mb-20">
         {/* Buttons */}
         <div className="flex gap-4">
           <button
