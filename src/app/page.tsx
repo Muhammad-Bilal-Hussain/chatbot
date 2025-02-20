@@ -1,9 +1,10 @@
-import Chat from "./component/Chat";
+import Hero from "./component/Hero";
 
 export default function Home() {
-  return (
-    <div>
-      <Chat/>
+  return (  
+    <div className="">
+      
+      <Hero/>
     </div>
   );
 }

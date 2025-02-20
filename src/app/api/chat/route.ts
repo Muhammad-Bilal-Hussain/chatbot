@@ -9,10 +9,9 @@ export async function GET() {
 // ✅ POST Request ke liye API Route
 export async function POST(_req: Request) {
   try {
-    const { message } = await _req.json();
-
-    if (!message) {
-      return NextResponse.json({ error: "Message is required" }, { status: 400 });
+    const { chatHistory } = await _req.json();
+    if (!chatHistory || !Array.isArray(chatHistory) || chatHistory.length === 0) {
+      return NextResponse.json({ error: "Chat history is required" }, { status: 400 });
     }
 
     const apiKey = process.env.NEXT_PUBLIC_API_KEY;
@@ -26,13 +25,30 @@ export async function POST(_req: Request) {
 
     console.log("✅ Sending Request to Gemini...");
     
+    const formattedChatHistory = chatHistory.map((msg) => ({
+      role: msg.role === "user" ? "user" : "model",
+      parts: [{ text: msg.text }],
+    }));
+
+    // 🟢 Language detection added
     const result = await model.generateContent({
       contents: [
+        ...formattedChatHistory,
         {
           role: "user",
-          parts: [{ text: message }],
+          parts: [
+            {
+              text: `Detect the language of the user's message and reply in the same language naturally. 
+              Respond concisely and conversationally.`,
+            },
+          ],
         },
       ],
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.9,
+        maxOutputTokens: 1000,
+      },
     });
 
     console.log("✅ API Response Received:", result);

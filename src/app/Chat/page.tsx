@@ -52,7 +52,7 @@ export default function ChatBot() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: `Reply in a natural and conversational way. Keep it short and simple, without extra headings or unnecessary details.\n\nUser: ${message}`,
+          chatHistory: [...chatHistory, { role: "user", text: message }],
         }),
       });
 
